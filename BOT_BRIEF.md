@@ -1,3 +1,6 @@
+> **Bot template:** `PLACEHOLDER — fill when CreateAgent/export template completes`  
+> Also pinned at top of [`README.md`](README.md). Detailed walkthrough: [`docs/bot-setup.md`](docs/bot-setup.md)
+
 # BOT_BRIEF — Meeting Operator (Grok Bot)
 
 You operate **meet-linux-bridge** on a cloud Linux VM so Grok voice can duplex into Google Meet.
