@@ -36,17 +36,20 @@ resolve_email() {
     if [[ ! -t 0 ]]; then
       echo "[setup] ERROR: no email found. Set MEET_BRIDGE_EMAIL or write $CONFIG_DIR/email" >&2
       echo "[setup] Refusing to hang on non-TTY without email." >&2
-      exit 2
+      return 2
     fi
     printf 'Meet/bot Google account email: '
     read -r email
     email="$(echo "$email" | tr -d '[:space:]')"
-    [[ -n "$email" ]] || { echo "[setup] ERROR: email required" >&2; exit 2; }
+    [[ -n "$email" ]] || { echo "[setup] ERROR: email required" >&2; return 2; }
   fi
-  printf '%s\n' "$email"
+  REPLY_EMAIL="$email"
+  return 0
 }
 
-email="$(resolve_email)"
+REPLY_EMAIL=""
+resolve_email || exit $?
+email="$REPLY_EMAIL"
 printf '%s\n' "$email" > "$CONFIG_DIR/email"
 chmod 600 "$CONFIG_DIR/email" 2>/dev/null || true
 printf 'email=%s\ninstalled_at=%s\n' "$email" "$(date -Iseconds 2>/dev/null || date)" > "$CONFIG_DIR/.installed"

@@ -187,20 +187,23 @@ resolve_email() {
     if [[ "$NONINTERACTIVE" -eq 1 ]] || [[ ! -t 0 ]]; then
       echo "[install] ERROR: no email found. Set MEET_BRIDGE_EMAIL or write $CONFIG_DIR/email" >&2
       echo "[install] Noninteractive/no-TTY install will not hang waiting for input." >&2
-      exit 2
+      return 2
     fi
     printf "Meet/bot Google account email: "
     read -r email
     email="$(echo "$email" | tr -d "[:space:]")"
-    [[ -n "$email" ]] || { echo "[install] ERROR: email required" >&2; exit 2; }
+    [[ -n "$email" ]] || { echo "[install] ERROR: email required" >&2; return 2; }
   fi
-  printf "%s\n" "$email"
+  REPLY_EMAIL="$email"
+  return 0
 }
 
 setup_config() {
   mkdir -p "$CONFIG_DIR" "$CHROME_PROFILE_DIR" "$DIR/runtime"
   local email
-  email="$(resolve_email)"
+  REPLY_EMAIL=""
+  resolve_email || return $?
+  email="$REPLY_EMAIL"
   # Store on first capture / refresh (never re-prompt next time)
   printf "%s\n" "$email" > "$CONFIG_DIR/email"
   chmod 600 "$CONFIG_DIR/email" 2>/dev/null || true
