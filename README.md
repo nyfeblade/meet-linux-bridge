@@ -1,7 +1,7 @@
 # meet-linux-bridge
 
-> **Bot template (clone / install):** `PLACEHOLDER — fill when CreateAgent/export template completes`  
-> Until then use this repo: `git clone https://github.com/nyfeblade/meet-linux-bridge.git && cd meet-linux-bridge && MEET_BRIDGE_EMAIL=you@example.com ./install.sh --noninteractive`  
+> **Bot template (clone / install):** [Meeting Operator](grokbot://app/v1/bot-template?id=M9Kc9ZH7lrhbTvP2Bc6TM) · https://x.ai/bot/M9Kc9ZH7lrhbTvP2Bc6TM  
+> Git clone install: `git clone https://github.com/nyfeblade/meet-linux-bridge.git && cd meet-linux-bridge && MEET_BRIDGE_EMAIL=you@example.com ./install.sh --noninteractive`  
 > Detailed Meeting Operator walkthrough → [`docs/bot-setup.md`](docs/bot-setup.md)
 
 PipeWire/Pulse **audio bridge** so a Grok Bot voice call can talk and listen inside **Google Meet** on Linux (Fedora/RHEL or Debian/Ubuntu).
