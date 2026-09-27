@@ -1,8 +1,8 @@
 # Meeting Operator setup (detailed)
 
 > **Bot template link (also at top of root README):**  
-> `PLACEHOLDER — fill when CreateAgent/export template completes`  
-> Repo install until then:
+> **Bot template (clone / install):** [Meeting Operator](grokbot://app/v1/bot-template?id=M9Kc9ZH7lrhbTvP2Bc6TM) · https://x.ai/bot/M9Kc9ZH7lrhbTvP2Bc6TM  
+> Repo install:
 > ```bash
 > git clone https://github.com/nyfeblade/meet-linux-bridge.git
 > cd meet-linux-bridge

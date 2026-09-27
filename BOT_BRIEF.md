@@ -1,4 +1,4 @@
-> **Bot template:** `PLACEHOLDER — fill when CreateAgent/export template completes`  
+> **Bot template:** [Meeting Operator](grokbot://app/v1/bot-template?id=M9Kc9ZH7lrhbTvP2Bc6TM) · https://x.ai/bot/M9Kc9ZH7lrhbTvP2Bc6TM  
 > Also pinned at top of [`README.md`](README.md). Detailed walkthrough: [`docs/bot-setup.md`](docs/bot-setup.md)
 
 # BOT_BRIEF — Meeting Operator (Grok Bot)
