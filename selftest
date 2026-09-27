@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$DIR/lib.sh"
+ensure_tools
+
+AUDIBLE="${AUDIBLE:-0.02}"
+SILENT="${SILENT:-0.008}"
+failed=0
+
+check() {
+  local ok="$1" name="$2" detail="${3:-}"
+  if [[ "$ok" == "1" ]]; then
+    echo "PASS  $name${detail:+  — $detail}"
+  else
+    echo "FAIL  $name${detail:+  — $detail}"
+    failed=$((failed + 1))
+  fi
+}
+
+echo "[selftest] ensuring devices..."
+create_devices
+
+if devices_present; then
+  check 1 "virtual devices present" "$MOUTH_SINK / $EARS_SINK / $MOUTH_MIC / $EARS_MIC"
+else
+  check 0 "virtual devices present" "missing after create"
+  echo; echo "$failed check(s) failed"
+  exit 1
+fi
+
+run_loop() {
+  local out_sink="$1" in_src="$2" secs="${3:-3}" hz="${4:-440}"
+  local peak_file
+  peak_file="$(mktemp)"
+  ( meter_source "$in_src" "$secs" > "$peak_file" ) &
+  local meter_pid=$!
+  sleep 0.7
+  play_tone "$out_sink" 2 "$hz" || true
+  wait "$meter_pid" || true
+  local peak
+  peak="$(cat "$peak_file")"
+  rm -f "$peak_file"
+  echo "$peak"
+}
+
+echo "[selftest] mouth: tone -> $MOUTH_SINK, meter $MOUTH_MIC ..."
+mouth_peak="$(run_loop "$MOUTH_SINK" "$MOUTH_MIC" 3 440)"
+if python3 -c "import sys; sys.exit(0 if float(\"$mouth_peak\") > float(\"$AUDIBLE\") else 1)"; then
+  check 1 "mouth: \"$MOUTH_SINK\" -> \"$MOUTH_MIC\" (Meet mic)" "peak=$mouth_peak"
+else
+  check 0 "mouth: \"$MOUTH_SINK\" -> \"$MOUTH_MIC\" (Meet mic)" "peak=$mouth_peak (need > $AUDIBLE)"
+fi
+
+sleep 0.4
+
+echo "[selftest] ears: tone -> $EARS_SINK, meter $EARS_MIC ..."
+ears_peak="$(run_loop "$EARS_SINK" "$EARS_MIC" 3 880)"
+if python3 -c "import sys; sys.exit(0 if float(\"$ears_peak\") > float(\"$AUDIBLE\") else 1)"; then
+  check 1 "ears: \"$EARS_SINK\" out (Meet speakers) -> \"$EARS_MIC\" in (Grok mic)" "peak=$ears_peak"
+else
+  check 0 "ears: \"$EARS_SINK\" out (Meet speakers) -> \"$EARS_MIC\" in (Grok mic)" "peak=$ears_peak (need > $AUDIBLE)"
+fi
+
+sleep 0.4
+
+echo "[selftest] no-echo: tone -> $MOUTH_SINK, meter $EARS_MIC ..."
+echo_peak="$(run_loop "$MOUTH_SINK" "$EARS_MIC" 3 440)"
+if python3 -c "import sys; p=float(\"$echo_peak\"); s=float(\"$SILENT\"); sys.exit(0 if p>=0 and p<s else 1)"; then
+  check 1 "no echo: \"$EARS_MIC\" silent while mouth speaks" "peak=$echo_peak"
+else
+  check 0 "no echo: \"$EARS_MIC\" silent while mouth speaks" "peak=$echo_peak (need < $SILENT)"
+fi
+
+echo
+if (( failed )); then
+  echo "$failed check(s) failed"
+  exit 1
+fi
+echo "all checks passed"
+echo "manual: Grok Bot > Settings > Microphone lists \"$EARS_MIC\""
+echo "next: ./route on  then Meet mic=$MOUTH_MIC speakers=$EARS_SINK"
+exit 0

@@ -1,0 +1,19 @@
+{
+  "name": "meet-linux-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PipeWire/Pulse audio bridge + Chrome Meet join helper for Grok Bot on Linux",
+  "type": "module",
+  "scripts": {
+    "join": "node scripts/join-meet.mjs",
+    "selftest": "./selftest",
+    "route:on": "./route on",
+    "route:off": "./route off"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

@@ -1,0 +1,25 @@
+# Secrets, local config, Chrome profiles — never publish
+.profile-meet/
+.chrome-profile/
+runtime/*.env
+runtime/*.log
+!runtime/.gitkeep
+~/.config/meet-bridge/
+
+# Local config that may hold email / meet URL
+config.json
+.config/
+
+# Node
+node_modules/
+package-lock.json
+playwright-report/
+test-results/
+.playwright/
+
+# OS / editor
+.DS_Store
+*.swp
+*~
+.env
+.env.*

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# route on|off|status — Mac mental model for Fedora (bot-only: no Multi-out).
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$DIR/lib.sh"
+ensure_tools
+
+route_on() {
+  create_devices
+  local cur
+  cur="$(pactl get-default-sink)"
+  if [[ "$cur" != "$MOUTH_SINK" ]]; then
+    printf "PREV_DEFAULT_SINK=%q\n" "$cur" > "$ROUTE_PREV"
+  fi
+  pactl set-default-sink "$MOUTH_SINK"
+  pactl set-sink-mute "$MOUTH_SINK" 0 || true
+  pactl set-sink-volume "$MOUTH_SINK" 100% || true
+  echo "[route] default sink: $cur -> $MOUTH_SINK  (Grok voice -> Meet mic path)"
+  echo "[route] Meet mic     = $MOUTH_MIC   (or ${MOUTH_SINK}.monitor)"
+  echo "[route] Meet speakers= $EARS_SINK"
+  echo "[route] Grok Bot Settings > Microphone = $EARS_MIC"
+  echo "[route] bot-only: no Multi-out; Grok default output goes straight to $MOUTH_SINK"
+  echo "[route] if Grok still talks on speakers: hang up voice call and start again after route on"
+}
+
+route_off() {
+  if [[ ! -f "$ROUTE_PREV" ]]; then
+    echo "[route] nothing saved; default sink unchanged ($(pactl get-default-sink))"
+    return 0
+  fi
+  # shellcheck disable=SC1090
+  source "$ROUTE_PREV"
+  if [[ -n "${PREV_DEFAULT_SINK:-}" ]]; then
+    pactl set-default-sink "$PREV_DEFAULT_SINK"
+    echo "[route] default sink restored: $PREV_DEFAULT_SINK"
+  fi
+  rm -f "$ROUTE_PREV"
+  echo "[route] In Grok Bot set Microphone back to your real mic."
+}
+
+route_status() {
+  status_devices
+  if ! devices_present; then
+    return 0
+  fi
+  echo "=== 2s peak meters (silence OK if nothing playing) ==="
+  local mouth ears
+  mouth="$(meter_source "$MOUTH_MIC" 2)"
+  ears="$(meter_source "$EARS_MIC" 2)"
+  echo "mouth  $MOUTH_MIC: peak $mouth"
+  echo "ears   $EARS_MIC: peak $ears"
+}
+
+cmd="${1:-status}"
+case "$cmd" in
+  on) route_on ;;
+  off) route_off ;;
+  status) route_status ;;
+  *) echo "usage: $0 on|off|status" >&2; exit 2 ;;
+esac
