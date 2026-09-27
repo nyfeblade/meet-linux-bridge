@@ -85,34 +85,52 @@ pkg_install_debian() {
 
 ensure_pulse_session() {
   # Start a user PipeWire/Pulse session if pactl is missing a server.
+  # Works on cloud VMs without systemd --user (dbus-launch + XDG_RUNTIME_DIR).
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/xdg-runtime-$(id -u)}"
+  mkdir -p "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+
+  if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+    if [[ -S "$XDG_RUNTIME_DIR/bus" ]]; then
+      export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+    elif command -v dbus-launch >/dev/null 2>&1; then
+      # shellcheck disable=SC2046
+      eval "$(dbus-launch --sh-syntax)"
+      log "started session dbus"
+    elif command -v dbus-daemon >/dev/null 2>&1; then
+      dbus-daemon --session --address="unix:path=$XDG_RUNTIME_DIR/bus" --fork 2>/dev/null || true
+      export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+    fi
+  fi
+
   if command -v pactl >/dev/null 2>&1 && pactl info >/dev/null 2>&1; then
     log "Pulse/PipeWire session OK ($(pactl get-default-sink 2>/dev/null || echo '?'))"
     return 0
   fi
   log "No live Pulse server; trying to start pipewire-pulse / pulseaudio ..."
   if command -v pipewire >/dev/null 2>&1; then
-    # Best-effort user session without systemd
-    if ! pgrep -u "$(id -u)" pipewire >/dev/null 2>&1; then
-      pipewire >/tmp/meet-bridge-pipewire.log 2>&1 &
-      sleep 0.5
-    fi
-    if command -v wireplumber >/dev/null 2>&1 && ! pgrep -u "$(id -u)" wireplumber >/dev/null 2>&1; then
-      wireplumber >/tmp/meet-bridge-wireplumber.log 2>&1 &
-      sleep 0.5
-    fi
-    if command -v pipewire-pulse >/dev/null 2>&1 && ! pgrep -u "$(id -u)" -f pipewire-pulse >/dev/null 2>&1; then
-      pipewire-pulse >/tmp/meet-bridge-pipewire-pulse.log 2>&1 &
+    if ! pgrep -u "$(id -u)" -x pipewire >/dev/null 2>&1; then
+      nohup pipewire >/tmp/meet-bridge-pipewire.log 2>&1 &
       sleep 0.8
+    fi
+    if command -v wireplumber >/dev/null 2>&1 && ! pgrep -u "$(id -u)" -x wireplumber >/dev/null 2>&1; then
+      nohup wireplumber >/tmp/meet-bridge-wireplumber.log 2>&1 &
+      sleep 0.8
+    fi
+    if command -v pipewire-pulse >/dev/null 2>&1 && ! pgrep -u "$(id -u)" -x pipewire-pulse >/dev/null 2>&1; then
+      nohup pipewire-pulse >/tmp/meet-bridge-pipewire-pulse.log 2>&1 &
+      sleep 1.0
     fi
   elif command -v pulseaudio >/dev/null 2>&1; then
     pulseaudio --start --exit-idle-time=-1 >/tmp/meet-bridge-pulse.log 2>&1 || true
     sleep 0.5
   fi
   if command -v pactl >/dev/null 2>&1 && pactl info >/dev/null 2>&1; then
-    log "Pulse session started"
+    log "Pulse session started ($(pactl get-default-sink 2>/dev/null || echo '?'))"
     return 0
   fi
   warn "pactl still cannot talk to a server. Selftest may FAIL until PipeWire/Pulse is running."
+  warn "hint: export XDG_RUNTIME_DIR and start dbus-launch; then re-run ./selftest"
   return 0
 }
 
